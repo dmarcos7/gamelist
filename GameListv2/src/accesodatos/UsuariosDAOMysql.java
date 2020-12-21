@@ -2,6 +2,7 @@ package accesodatos;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -14,11 +15,13 @@ public class UsuariosDAOMysql implements Dao<Usuario> {
 	
 	private static UsuariosDAOMysql instancia;
 	// para la conexion con la base de datos
-	private static final String URL = "jdbc:mysql://localhost:3306/peliculas_bdd?characterEncoding=UTF-8";
+	private static final String URL = "jdbc:mysql://localhost:3306/gameslist?characterEncoding=UTF-8";
 	private static final String USER = "debian-sys-maint";
 	private static final String PASS = "o8lAkaNtX91xMUcV";
 	
 	private static final String SQLSELECT = "SELECT * FROM usuarios u JOIN roles r ON u.id_rol = r.id";
+	private static final String SQL_SELECT_EMAIL = "SELECT * FROM usuarios u JOIN roles r ON u.id_rol = r.id WHERE u.email = ?";
+	private static final String SQL_INSERT = "INSERT INTO usuarios(username, pass, email, id_rol) VALUES(?,?,?,?)";
 	
 	static {
 		try {
@@ -53,11 +56,11 @@ public class UsuariosDAOMysql implements Dao<Usuario> {
 				Usuario usuario = new Usuario(res.getLong("u.id"), res.getString("u.username"),res.getString("u.pass"), res.getString("u.email"), rol);
 				usuarios.add(usuario);	
 			}
+			return usuarios;
 		} catch (SQLException e) {
+			throw new AccesoDatosException("Ha habido un error a la hora de obtener la información de la base de datos");
 			
-			e.printStackTrace();
 		}
-		return Dao.super.obtenerTodos();
 	}
 
 	@Override
@@ -68,20 +71,47 @@ public class UsuariosDAOMysql implements Dao<Usuario> {
 
 	@Override
 	public Usuario obtenerPorEmail(String email) {
-		// TODO Auto-generated method stub
-		return Dao.super.obtenerPorEmail(email);
+		try (Connection conn = DriverManager.getConnection(URL, USER, PASS);
+				PreparedStatement ps = conn.prepareStatement(SQL_SELECT_EMAIL)) {
+			ps.setString(1, email);
+			
+			try(ResultSet res = ps.executeQuery();){
+				Usuario usuario = null;
+				if(res.next()) {
+					Rol rol = new Rol(res.getLong("r.id"), res.getString("r.nombre"), res.getString("r.descripcion"));
+					usuario = new Usuario(res.getLong("u.id"), res.getString("u.username"),res.getString("u.pass"), res.getString("u.email"), rol);
+				}
+				
+				return usuario;
+			}
+		} catch (SQLException e) {
+			throw new AccesoDatosException("No ha podido obtenerse la informacion del usuario");
+		}
 	}
 
 	@Override
 	public void insertar(Usuario usuario) {
-		// TODO Auto-generated method stub
-		Dao.super.insertar(usuario);
+		try (Connection conn = DriverManager.getConnection(URL, USER, PASS);
+				PreparedStatement ps = conn.prepareStatement(SQL_INSERT)) {
+			ps.setString(1, usuario.getUsername());
+			ps.setString(2, usuario.getPass());
+			ps.setString(3, usuario.getEmail());
+			ps.setLong(4, usuario.getRol().getId());
+			int numRegistros = ps.executeUpdate();
+			if(numRegistros <=0) {
+				throw new AccesoDatosException("Se han insertado 0 registros");
+			}else if(numRegistros > 1) {
+				throw new AccesoDatosException("SE HA INSERTADO MÁS DE UN REGISTRO");
+			}
+		} catch (SQLException e) {
+			throw new AccesoDatosException("No se ha podido realizar la operacion de inserción");
+		}
+		
 	}
 
 	@Override
 	public void modificar(Usuario usuario) {
-		// TODO Auto-generated method stub
-		Dao.super.modificar(usuario);
+		
 	}
 
 	@Override
