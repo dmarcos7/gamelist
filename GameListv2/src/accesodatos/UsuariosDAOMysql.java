@@ -22,6 +22,8 @@ public class UsuariosDAOMysql implements Dao<Usuario> {
 	private static final String SQLSELECT = "SELECT * FROM usuarios u JOIN roles r ON u.id_rol = r.id";
 	private static final String SQL_SELECT_EMAIL = "SELECT * FROM usuarios u JOIN roles r ON u.id_rol = r.id WHERE u.email = ?";
 	private static final String SQL_INSERT = "INSERT INTO usuarios(username, pass, email, id_rol) VALUES(?,?,?,?)";
+	private static final String SQL_UPDATE_EMAIL = "UPDATE usuarios SET email = ? WHERE id = ?";
+	private static final String SQL_UPDATE_PASS = "UPDATE usuarios SET pass = ? WHERE id = ?";
 	
 	static {
 		try {
@@ -110,10 +112,38 @@ public class UsuariosDAOMysql implements Dao<Usuario> {
 	}
 
 	@Override
-	public void modificar(Usuario usuario) {
-		
+	public void modificarEmail(Usuario usuario) {
+		try (Connection conn = DriverManager.getConnection(URL, USER, PASS);
+				PreparedStatement ps = conn.prepareStatement(SQL_UPDATE_EMAIL)) {
+			ps.setString(1, usuario.getEmail());
+			ps.setLong(2, usuario.getId());
+			int numRegistros = ps.executeUpdate();
+			if(numRegistros <=0) {
+				throw new AccesoDatosException("Se han modificado 0 registros");
+			}else if(numRegistros > 1) {
+				throw new AccesoDatosException("SE HA MODIFICADO MÁS DE UN REGISTRO");
+			}
+		} catch (SQLException e) {
+			throw new AccesoDatosException("No se ha podido realizar la modificación");
+		}
 	}
-
+	
+	@Override
+	public void modificarPass(Usuario usuario) {
+		try (Connection conn = DriverManager.getConnection(URL, USER, PASS);
+				PreparedStatement ps = conn.prepareStatement(SQL_UPDATE_PASS)) {
+			ps.setString(1, usuario.getPass());
+			ps.setLong(2, usuario.getId());
+			int numRegistros = ps.executeUpdate();
+			if(numRegistros <=0) {
+				throw new AccesoDatosException("Se han modificado 0 registros");
+			}else if(numRegistros > 1) {
+				throw new AccesoDatosException("SE HA MODIFICADO MÁS DE UN REGISTRO");
+			}
+		} catch (SQLException e) {
+			throw new AccesoDatosException("No se ha podido realizar la modificación");
+		}
+	}
 	@Override
 	public void borrar(Long id) {
 		// TODO Auto-generated method stub

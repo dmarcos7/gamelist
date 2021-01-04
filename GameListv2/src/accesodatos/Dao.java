@@ -27,4 +27,12 @@ public interface Dao<T> {
 	default void borrar(Long id) {
 		throw new AccesoDatosException(OPERACIÓN_NO_IMPLEMENTADA);
 	}
+	
+	default void modificarEmail(T objeto) {
+		throw new AccesoDatosException(OPERACIÓN_NO_IMPLEMENTADA);
+	}
+	
+	default void modificarPass(T objeto) {
+		throw new AccesoDatosException(OPERACIÓN_NO_IMPLEMENTADA);
+	}
 }
